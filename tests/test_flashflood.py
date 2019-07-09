@@ -26,16 +26,13 @@ class TestFlashFlood(unittest.TestCase):
     def tearDownClass(cls):
         cls.flashflood._delete_all()
 
-    def test_flashflood(self):
+    def test_events(self):
         events = self.generate_events()
         events.update(self.generate_events(5, collate=False))
         retrieved_events = {event_id: event_data
                             for timestamp, event_id, event_data in self.flashflood.events()}
         for event_id in events:
             self.assertEqual(events[event_id], retrieved_events[event_id])
-
-        event_id = next(iter(events.keys()))
-        self.assertEqual(self.flashflood.get(event_id), events[event_id])
 
     def test_collation(self):
         self.generate_events(1, collate=False)
@@ -45,7 +42,7 @@ class TestFlashFlood(unittest.TestCase):
     def test_urls(self):
         self.generate_events()
         self.generate_events()
-        resp = self.flashflood.get_presigned_event_urls()
+        resp = self.flashflood.event_urls()
         for timestamp, event_id, event_data in flashflood.events_for_presigned_urls(resp):
             print(event_id)
 
