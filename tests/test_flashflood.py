@@ -1,18 +1,17 @@
 #!/usr/bin/env python
-import io
 import os
 import sys
 from uuid import uuid4
 import unittest
 import boto3
-import json
-from tempfile import gettempdir
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from random import randint
 
 pkg_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))  # noqa
 sys.path.insert(0, pkg_root)  # noqa
 
-import flashflood
-from tests import infra
+from flashflood import flashflood
+from flashflood.util import datetime_from_timestamp, distant_past
 
 
 class TestFlashFlood(unittest.TestCase):
@@ -24,38 +23,89 @@ class TestFlashFlood(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.flashflood._delete_all()
+        with ThreadPoolExecutor(max_workers=10) as e:
+            futures = [e.submit(item.delete)
+                       for item in cls.bucket.objects.filter(Prefix="flashflood_test_")]
+            for f in as_completed(futures):
+                f.result()
+
+    def tearDown(self):
+        self.flashflood._delete_all()
 
     def test_events(self):
-        events = self.generate_events()
+        events = dict()
+        events.update(self.generate_events())
         events.update(self.generate_events(5, collate=False))
-        retrieved_events = {event_id: event_data
-                            for timestamp, event_id, event_data in self.flashflood.events()}
+        retrieved_events = {event.uid: event for event in self.flashflood.events()}
         for event_id in events:
-            self.assertEqual(events[event_id], retrieved_events[event_id])
+            self.assertEqual(events[event_id].data, retrieved_events[event_id].data)
+
+    def test_ordering(self, number_of_collations=3, items_per_collation=3):
+        events = self.generate_events(number_of_collations * items_per_collation, collate=False)
+        for _ in range(number_of_collations):
+            self.flashflood.collate(items_per_collation)
+        timestamps = [e.timestamp for e in events.values()]
+        from_date = datetime_from_timestamp(sorted(timestamps)[1])
+
+        with self.subTest("events should be returned from date"):
+            retrieved_events = [event for event in self.flashflood.events(from_date=from_date)]
+            for event in retrieved_events:
+                self.assertGreaterEqual(datetime_from_timestamp(event.timestamp), from_date)
+            self.assertEqual(len(timestamps) - 1, len(retrieved_events))
+
+        with self.subTest("events via urls should be returned from date"):
+            from_date = distant_past
+            while True:
+                event_urls = self.flashflood.event_urls(from_date, 1)
+                if not event_urls:
+                    break
+                retrieved_events = [event for event in flashflood.events_from_urls(event_urls, from_date)]
+                for event in retrieved_events:
+                    self.assertGreaterEqual(datetime_from_timestamp(event.timestamp), from_date)
+                from_date = datetime_from_timestamp(event_urls[-1]['manifest']['to_date'])
 
     def test_collation(self):
         self.generate_events(1, collate=False)
         with self.assertRaises(flashflood.FlashFloodCollationError):
-            self.flashflood.collate(minimum_number_of_events=2)
+            self.flashflood.collate(number_of_events=2)
 
     def test_urls(self):
-        self.generate_events()
-        self.generate_events()
-        resp = self.flashflood.event_urls()
-        for timestamp, event_id, event_data in flashflood.events_for_presigned_urls(resp):
-            print(event_id)
+        events = dict()
+        events.update(self.generate_events())
+        events.update(self.generate_events())
+        event_urls = self.flashflood.event_urls()
+        retrieved_events = {event.uid: event
+                            for event in flashflood.events_from_urls(event_urls)}
+        for event_id in events:
+            self.assertEqual(events[event_id].data, retrieved_events[event_id].data)
+
+    def test_get_new_collations(self):
+        events = self.generate_events(3, collate=False)
+        new_collations = [c for c in self.flashflood._get_new_collations(len(events)-1)]
+        self.assertEqual(len(events)-1, len(new_collations))
 
     def generate_events(self, number_of_events=7, collate=True):
-        events = dict()
-        for _ in range(number_of_events):
-            event_data = os.urandom(10)
+        def _put():
             event_id = str(uuid4()) + ".asdj__argh"
-            events[event_id] = event_data
-            self.flashflood.put(event_data, event_id)
+            timestamp = self._random_timestamp()
+            return self.flashflood.put(os.urandom(3), event_id, timestamp) 
+
+        with ThreadPoolExecutor(max_workers=10) as e:
+            futures = [e.submit(_put) for _ in range(number_of_events)]
+            events = {f.result().uid: f.result() for f in futures}
         if collate:
-            self.flashflood.collate(minimum_number_of_events=number_of_events)
+            self.flashflood.collate(number_of_events=number_of_events)
         return events
+
+    def _random_timestamp(self):
+        year = "%04i" % randint(1,2019)
+        month = "%02i" % randint(1, 12)
+        day = "%02i" % randint(1, 28)
+        hours = "%02i" % randint(0, 23)
+        minutes = "%02i" % randint(0, 59)
+        seconds = "%02i" % randint(0, 59)
+        fractions = "%06i" % randint(1, 999999)
+        return f"{year}-{month}-{day}T{hours}{minutes}{seconds}.{fractions}Z"
 
 if __name__ == '__main__':
     unittest.main()
