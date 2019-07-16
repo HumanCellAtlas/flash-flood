@@ -1,5 +1,5 @@
 FlashFlood is an event recorder and streamer built on top of [AWS S3](https://aws.amazon.com/s3/),
-emphasizing scalability and fast bulk reads.
+supporting distributed writes and fast distributed bulk reads.
 
 ## Installation
     pip install flashflood
@@ -21,15 +21,25 @@ To optimize bulk reads, call `collate` (this must be executed non-concurrently)
 ff.collate(number_of_events=5000)
 ```
 
-Stream events starting from `date`
+Get an event
 ```
-for event in ff.events(from_date=date):
-	my_event_processor(event.data)
+ff.get_event(my_event_id)
+```
+
+Update event data
+```
+ff.update_event(my_new_event_data, my_event_id)
+```
+
+Stream events
+```
+for event in ff.events(from_date=date_a, to_date=date_b):
+    my_event_processor(event.data)
 ```
 
 Stream events from S3 signed urls:
 ```
-url_info = ff.event_urls(from_date=date)
-for event in flashflood.events_from_urls(url_info, from_date=date):
-	my_event_processor(event.data)
+url_info = ff.event_urls(from_date=date, to_date=date_b)
+for event in flashflood.events_from_urls(url_info, from_date=date_a, to_date=date_b):
+    my_event_processor(event.data)
 ```
