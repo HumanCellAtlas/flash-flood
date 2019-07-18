@@ -1,4 +1,4 @@
-# Dependencies: git pandoc moreutils httpie
+# Dependencies: git pandoc moreutils httpie twine
 
 SHELL=/bin/bash -eo pipefail
 
@@ -15,6 +15,7 @@ release_patch:
 	$(MAKE) release
 
 release:
+	@if [[ $$(which twine) ]]; then :; else echo "*** Please install dependencies with 'pip install -r requirements-dev.txt' ***"; exit 1; fi
 	@if [[ -z $$TAG ]]; then echo "Use release_{major,minor,patch}"; exit 1; fi
 	git pull
 	git clean -x --force $$(python setup.py --name)
