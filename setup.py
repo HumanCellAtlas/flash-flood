@@ -4,10 +4,10 @@ from setuptools import setup, find_packages
 
 install_requires = [line.rstrip() for line in open(os.path.join(os.path.dirname(__file__), "requirements.txt"))]
 
-setup(name='flashflood',
+setup(name='flash-flood',
       version='0.1.0',
-      description='Event recorder providing fast, scalable playback.',
-      url='https://github.com/xbrianh/flashflood.git',
+      description='Event journaling providing distributed playback.',
+      url='https://github.com/xbrianh/flash-flood.git/',
       author='Brian Hannafious',
       author_email='bhannafi@ucsc.edu',
       license='MIT',
