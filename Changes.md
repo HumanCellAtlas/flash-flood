@@ -1,3 +1,8 @@
+# Changes for v0.1.3 (2019-08-05)
+Pass in s3 resource during instantiation (#18)
+More meaningful name for event data offset (#17)
+Turn on CI testing on travis (#16)
+
 # Changes for v0.1.2 (2019-07-18)
 Require twine for release (#15)
 Update exception names (#14)
