@@ -1,3 +1,6 @@
+# Changes for v0.2.0 (2019-09-19)
+Journal based on events count and size (#19)
+
 # Changes for v0.1.3 (2019-08-05)
 Pass in s3 resource during instantiation (#18)
 More meaningful name for event data offset (#17)
