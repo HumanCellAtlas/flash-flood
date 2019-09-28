@@ -1,3 +1,6 @@
+# Changes for v0.2.1 (2019-09-28)
+Add event_exists method (#20)
+
 # Changes for v0.2.0 (2019-09-19)
 Journal based on events count and size (#19)
 
