@@ -1,5 +1,9 @@
 import datetime
 from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import AbstractContextManager
+
+import boto3
 
 def datetime_to_timestamp(dt):
     return dt.strftime("%Y-%m-%dT%H%M%S.%fZ")
@@ -66,3 +70,35 @@ class _EmptyDateRange(DateRange):
 
     def contains(self, *args, **kwargs):
         return False
+
+_S3_BATCH_DELETE_MAX_KEYS = 1000
+
+def delete_keys(bucket, keys):
+    def _delete(keys_to_delete):
+        assert _S3_BATCH_DELETE_MAX_KEYS >= len(keys_to_delete)
+        objects = [dict(Key=key) for key in keys_to_delete]
+        bucket.delete_objects(Delete=dict(Objects=objects))
+
+    if keys:
+        with ThreadPoolExecutor(max_workers=10) as e:
+            futures = list()
+            while keys:
+                futures.append(e.submit(_delete, keys[:_S3_BATCH_DELETE_MAX_KEYS]))
+                keys = keys[_S3_BATCH_DELETE_MAX_KEYS:]
+            for f in as_completed(futures):
+                f.result()
+
+class S3Deleter(AbstractContextManager):
+    def __init__(self, bucket, deletion_threshold=5 * _S3_BATCH_DELETE_MAX_KEYS):
+        self.bucket = bucket
+        self.deletion_threshold = deletion_threshold
+        self._keys = list()
+
+    def delete(self, key):
+        self._keys.append(key)
+        if self.deletion_threshold <= len(self._keys):
+            delete_keys(self._keys)
+            self._keys = list()
+
+    def __exit__(self, *args, **kwargs):
+        delete_keys(self.bucket, self._keys)
