@@ -1,3 +1,7 @@
+# Changes for v0.3.0 (2019-10-01)
+Eventually consistent update/delete (#22)
+Ensure root prefix doesn't end with "/" (#21)
+
 # Changes for v0.2.1 (2019-09-28)
 Add event_exists method (#20)
 
