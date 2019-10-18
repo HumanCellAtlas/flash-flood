@@ -1,3 +1,6 @@
+# Changes for v0.4.1 (2019-10-18)
+List journals starting from know journal id (#37)
+
 # Changes for v0.4.0 (2019-10-16)
 Refactored flash-flood interface (#32)
 Add tests for objects and identifiers (#31)
