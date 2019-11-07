@@ -1,3 +1,10 @@
+# Changes for v0.4.2 (2019-11-07)
+Use new upload utility for object uploads (#42)
+Add s3 object tagging update utility (#41)
+Add s3 upload utility (#40)
+Make base s3 client available to flashflood objects (#39)
+Fix flaky event replay after update test (#38)
+
 # Changes for v0.4.1 (2019-10-18)
 List journals starting from know journal id (#37)
 
