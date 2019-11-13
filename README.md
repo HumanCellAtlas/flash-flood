@@ -43,3 +43,6 @@ url_info = ff.event_urls(from_date=date, to_date=date_b)
 for event in flashflood.events_from_urls(url_info, from_date=date_a, to_date=date_b):
     my_event_processor(event.data)
 ```
+
+## Links
+- [FlashFlood on PyPI](https://pypi.org/project/flash-flood/)
