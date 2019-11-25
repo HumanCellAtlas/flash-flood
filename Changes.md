@@ -1,3 +1,8 @@
+# Changes for v0.4.3 (2019-11-25)
+Handle new events with simultaneous timestamps (#46)
+Confirm s3 writes during testing (#44)
+Update README.md
+
 # Changes for v0.4.2 (2019-11-07)
 Use new upload utility for object uploads (#42)
 Add s3 object tagging update utility (#41)
