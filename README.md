@@ -6,10 +6,12 @@ supporting distributed writes and fast distributed bulk reads.
 
 ## Usage
 Instantiate into your favorite bucket and prefix
-```
-from flashflood import FlashFlood
-ff = FlashFlood("my_bucket", "my_prefix")
-```
+
+    import boto3
+    from flashflood import FlashFlood
+    res = boto3.resource('s3')
+    ff = FlashFlood(res, "my_bucket", "my_prefix")
+
 
 Record new events
 ```
@@ -18,7 +20,7 @@ ff.put(event_data, event_uuid, event_date)
 
 Journal events
 ```
-ff.journal(number_of_events=5000)
+ff.journal(minimum_number_of_events=5000)
 ```
 
 Get an event
